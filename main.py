@@ -3,7 +3,7 @@
 import aiofiles
 from fastapi import FastAPI, File, UploadFile
 from pydantic import BaseModel
-from mysql import user_credits_search, file_db, initial_check, plan_insert, plan_performance
+from mysql import user_credits_search, file_db, initial_check, plan_insert, plan_performance, y_performance
 
 
 TABLES = ['users', 'payments', 'plans', 'credits', 'dictionary']
@@ -42,6 +42,11 @@ async def plans_insert(file: UploadFile = File()):
 @app.post("/plans_performance")
 async def plans_performance(date):
     return plan_performance(date)
+
+
+@app.post("/year_performance")
+async def year_performance(year):
+    return y_performance(year)
 
 
 

@@ -78,7 +78,7 @@ class Credit:
 
 
 # Plan performance
-class Performance:
+class PlanPerformance:
     def __init__(self, date):
         self.date = pd.to_datetime(date, dayfirst=True)
         self.day, self.month, self.year = self.date.strftime('%d'), self.date.strftime('%m'), self.date.strftime('%Y')
@@ -108,6 +108,47 @@ class Performance:
                      'Payments': self.gather_performance,
                      'Percentage': self.gather_percentage
                      }
+
+
+class Month:
+    def __init__(self, month, year):
+        self.year = year
+        self.month = month
+
+        # Issuance
+        self.issuance_amount = len(pd.read_sql_query(f"SELECT body FROM credits WHERE issuance_date LIKE '__.{self.month}.{self.year}'", file_db).index)
+        self.issuance_month_plan = float(pd.read_sql_query(f"SELECT sum FROM plans WHERE period LIKE '01.{self.month}.{self.year}' AND category_id = 3", file_db).values[0][0])
+        self.issuance_month_sum = float(pd.read_sql_query(f"SELECT body FROM credits WHERE issuance_date LIKE '__.{self.month}.{self.year}'", file_db).sum().iloc[0])
+        self.issuance_percentage = self.issuance_month_sum / self.issuance_month_plan * 100
+
+        # Gather
+        self.payments_amount = len(pd.read_sql_query(f"SELECT sum FROM payments WHERE payment_date LIKE '__.{self.month}.{self.year}'", file_db).index)
+        self.payments_month_plan = float(pd.read_sql_query(f"SELECT sum FROM plans WHERE period LIKE '01.{self.month}.{self.year}' AND category_id = 4", file_db).values[0][0])
+        self.payments_month_sum = float(pd.read_sql_query(f"SELECT sum FROM payments WHERE payment_date LIKE '__.{self.month}.{self.year}'", file_db).sum().iloc[0])
+        self.payments_percentage = self.payments_month_sum/self.payments_month_plan * 100
+
+        # Month percent in year
+        self.issuance_in_year = pd.read_sql_query(f"SELECT body FROM credits WHERE issuance_date LIKE '__.__.{self.year}'", file_db).sum().iloc[0]
+        self.issuance_year_percentage = self.issuance_month_sum / self.issuance_in_year * 100
+
+        self.payments_in_year = pd.read_sql_query(f"SELECT sum FROM payments WHERE payment_date LIKE '__.__.{self.year}'", file_db).sum().iloc[0]
+        self.payments_year_percentage = self.payments_month_sum / self.payments_in_year * 100
+
+    def make_body(self) -> dict:
+        body = {
+                'Month': self.month,
+                'Issuance amount': self.payments_amount,
+                'Issuance month plan': self.issuance_month_plan,
+                'Issuance month sum': self.issuance_month_sum,
+                'Issuance plan percentage': self.issuance_percentage,
+                'Issuance year percentage': self.issuance_year_percentage,
+                'Payments amount': self.payments_amount,
+                'Payments month plan': self.payments_month_plan,
+                'Payments month sum': self.payments_month_sum,
+                'Payments plan percentage': self.payments_percentage,
+                'Payments year percentage': self.payments_year_percentage
+                }
+        return body
 
 
 def user_credits_search(file_db, user_id: int) -> dict:
@@ -196,10 +237,21 @@ def plan_insert(file_db) -> dict:
 
 # Plans performance
 def plan_performance(date) -> dict:
-    plan = Performance(date)
+    plan = PlanPerformance(date)
     body = {
             'Month': plan.month,
             'Issuance': plan.issuance,
             'Gather': plan.gather
             }
+    return body
+
+
+# Year performance
+def y_performance(year) -> dict:
+    body = {
+        'Year': f'{year}'
+    }
+    for m in range(1, 13):
+        m = str(m)
+        body[m] = Month(m.zfill(2), str(year)).make_body()
     return body
