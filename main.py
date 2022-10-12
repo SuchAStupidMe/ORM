@@ -3,7 +3,7 @@
 import aiofiles
 from fastapi import FastAPI, File, UploadFile
 from pydantic import BaseModel
-from mysql import user_credits_search, file_db, initial_check, plan_insert
+from mysql import user_credits_search, file_db, initial_check, plan_insert, plan_performance
 
 
 TABLES = ['users', 'payments', 'plans', 'credits', 'dictionary']
@@ -38,6 +38,10 @@ async def plans_insert(file: UploadFile = File()):
     except Exception as e:
         return {"Error": "Error processing file", "e": e}
 
+
+@app.post("/plans_performance")
+async def plans_performance(date):
+    return plan_performance(date)
 
 
 

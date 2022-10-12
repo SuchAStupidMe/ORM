@@ -77,6 +77,39 @@ class Credit:
             self.percent_sum = float(sum(self.percent_sum['sum'].tolist()))
 
 
+# Plan performance
+class Performance:
+    def __init__(self, date):
+        self.date = pd.to_datetime(date, dayfirst=True)
+        self.day, self.month, self.year = self.date.strftime('%d'), self.date.strftime('%m'), self.date.strftime('%Y')
+        self.plan_3 = pd.read_sql_query(f"SELECT period, sum FROM plans WHERE period LIKE '__.{self.month}.{self.year}' AND category_id = 3", file_db)  # Видача
+        self.plan_4 = pd.read_sql_query(f"SELECT period, sum FROM plans WHERE period LIKE '__.{self.month}.{self.year}' AND category_id = 4", file_db)  # Збір
+
+        # Issuance
+        self.issuance_sum = int(self.plan_3['sum'].iloc[0])
+        self.issuance_performance = float(pd.read_sql_query(f"SELECT body FROM credits WHERE issuance_date LIKE '__.{self.month}.{self.year}' AND issuance_date <= '{self.day}.{self.month}.{self.year}'", file_db).sum().iloc[0])
+        self.issuance_percentage = float(self.issuance_performance/self.issuance_sum * 100)
+
+        # Issuance dict
+        self.issuance = {
+                        'Sum': self.issuance_sum,
+                        'Performance': self.issuance_performance,
+                        'Percentage': self.issuance_percentage
+                        }
+
+        # Gather
+        self.gather_sum = int(self.plan_4['sum'].iloc[0])
+        self.gather_performance = float(pd.read_sql_query(f"SELECT sum FROM payments WHERE payment_date LIKE '__.{self.month}.{self.year}' AND payment_date <= '{self.day}.{self.month}.{self.year}'", file_db).sum().iloc[0])
+        self.gather_percentage = float(self.gather_performance/self.gather_sum * 100)
+
+        # Gather dict
+        self.gather ={
+                     'Sum': self.gather_sum,
+                     'Payments': self.gather_performance,
+                     'Percentage': self.gather_percentage
+                     }
+
+
 def user_credits_search(file_db, user_id: int) -> dict:
     credits = pd.read_sql_query(f'SELECT id from credits WHERE user_id = {user_id}', file_db)
     credits = credits['id'].tolist()
@@ -160,3 +193,13 @@ def plan_insert(file_db) -> dict:
     except Exception as e:
         return {'Error': e}
 
+
+# Plans performance
+def plan_performance(date) -> dict:
+    plan = Performance(date)
+    body = {
+            'Month': plan.month,
+            'Issuance': plan.issuance,
+            'Gather': plan.gather
+            }
+    return body
