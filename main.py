@@ -1,10 +1,12 @@
+# -*- coding: utf-8 -*-
+
 import aiofiles
 from fastapi import FastAPI, File, UploadFile
 from pydantic import BaseModel
 from mysql import user_credits_search, file_db, initial_check, plan_insert
 
 
-TABLES = ['users', 'payments', 'plans', 'credits']
+TABLES = ['users', 'payments', 'plans', 'credits', 'dictionary']
 initial_check(TABLES)
 
 app = FastAPI()
